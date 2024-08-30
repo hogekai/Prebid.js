@@ -1,4 +1,4 @@
-import { spec } from 'modules/pangleBidAdapter.js';
+import { spec } from 'modules/michaoBidAdapter.js';
 import { expect } from 'chai';
 
 describe('Michao bid adapter', () => {
@@ -14,18 +14,6 @@ describe('Michao bid adapter', () => {
 
       expect(spec.isBidRequestValid(bidWithoutSiteId)).to.equal(false);
       expect(spec.isBidRequestValid(bidWithoutPlacementId)).to.equal(false);
-    });
-
-    it('should return true if `siteId` and `placementId` are included', () => {
-      const bidWithPlacementIdAndSiteId = {
-        bidder: 'michao',
-        params: {
-          siteId: 123,
-          placementId: 456
-        }
-      };
-
-      expect(spec.isBidRequestValid(bidWithPlacementIdAndSiteId)).to.equal(true);
     });
 
     it('should return false if `siteId` or `placementId` is not a numeric type', () => {
@@ -68,6 +56,18 @@ describe('Michao bid adapter', () => {
 
       expect(spec.isBidRequestValid(bidWithNegativePlacementId)).to.equal(false);
       expect(spec.isBidRequestValid(bidWithNegativeSiteId)).to.equal(false);
+    });
+
+    it('should return true if `siteId` and `placementId` are included', () => {
+      const bidWithPlacementIdAndSiteId = {
+        bidder: 'michao',
+        params: {
+          siteId: 123,
+          placementId: 444
+        }
+      };
+
+      expect(spec.isBidRequestValid(bidWithPlacementIdAndSiteId)).to.equal(true);
     });
   });
 });

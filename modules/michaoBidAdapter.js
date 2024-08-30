@@ -1,7 +1,7 @@
-import { registerBidder } from "../src/adapters/bidderFactory";
-import { deepAccess, isNumber } from "../src/utils";
+import { registerBidder } from '../src/adapters/bidderFactory';
+import { deepAccess, isNumber } from '../src/utils';
 
-const BIDDER_CODE = "michao";
+const BIDDER_CODE = 'michao';
 
 export const spec = {
   code: BIDDER_CODE,
@@ -27,7 +27,7 @@ function validateBidParams(bid) {
     return false;
   }
 
-  if (isNumber(siteId) || isNumber(placementId)) {
+  if (!isNumber(siteId) || !isNumber(placementId)) {
     return false;
   }
 
@@ -37,6 +37,5 @@ function validateBidParams(bid) {
 
   return true;
 }
-
 
 registerBidder(spec);
