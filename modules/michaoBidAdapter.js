@@ -48,6 +48,15 @@ export const spec = {
 
     return serverRequests;
   },
+
+  interpretResponse: function (response, request) {
+    const bids = openRTBConverter.fromORTB({
+      response: response.body,
+      request: request.data,
+    }).bids;
+    
+    return bids;
+  },
 };
 
 function validateBidParams(bid) {

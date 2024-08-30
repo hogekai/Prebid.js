@@ -1,6 +1,10 @@
 import { spec } from "modules/michaoBidAdapter.js";
 import { expect } from "chai";
-import { ENDPOINT, REQUEST_METHOD } from "../../../modules/michaoBidAdapter";
+import {
+  BIDDER_CODE,
+  ENDPOINT,
+  REQUEST_METHOD,
+} from "../../../modules/michaoBidAdapter";
 
 const MOCK_AUCTION_ID = "auctionId-56a2-4f71-9098-720a68f2f708";
 const REFERER_INFO = {
@@ -101,6 +105,8 @@ describe("Michao bid adapter", () => {
     let mockBannerBid2;
     let mockBannerValidBidRequests;
     let mockBannerBidderRequest;
+    let mockBannerResponse;
+    let mockBannerBidResponseForBannerBid1;
 
     beforeEach(() => {
       mockBannerBid1 = {
@@ -156,6 +162,37 @@ describe("Michao bid adapter", () => {
         ortb2: {},
         refererInfo: REFERER_INFO,
       };
+
+      mockBannerBidResponseForBannerBid1 = {
+        id: "requestId",
+        seatbid: [
+          {
+            bid: [
+              {
+                id: mockBannerBid1.bidId,
+                impid: mockBannerBid1.bidId,
+                price: 0.18,
+                adm: "<script>adm</script>",
+                adid: "144762342",
+                adomain: ["https://dummydomain.com"],
+                iurl: "iurl",
+                cid: "109",
+                crid: "creativeId",
+                cat: [],
+                w: 300,
+                h: 250,
+                mtype: 1,
+              },
+            ],
+            seat: BIDDER_CODE,
+          },
+        ],
+      };
+
+      mockBannerResponse = {
+        headers: null,
+        body: mockBannerBidResponseForBannerBid1,
+      };
     });
 
     describe("`buildRequests`", () => {
@@ -181,6 +218,51 @@ describe("Michao bid adapter", () => {
           mockBannerBid2.bidId
         );
         expect(serverRequests[0].data.imp[0]).to.have.property("banner");
+      });
+    });
+
+    describe("`interpretResponse`", () => {
+      it("should be interpreted from OpenRTB bid response to Prebid.js bid response", () => {
+        const serverRequests = spec.buildRequests(
+          mockBannerValidBidRequests,
+          mockBannerBidderRequest
+        );
+        const bidResponse = spec.interpretResponse(
+          mockBannerResponse,
+          serverRequests[0]
+        );
+
+        console.log(bidResponse[0].requestId);
+
+        expect(bidResponse).to.be.an("array").that.is.not.empty;
+
+        expect(bidResponse[0]).to.have.property("currency", "USD");
+        expect(bidResponse[0]).to.have.property(
+          "requestId",
+          mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].id
+        );
+        expect(bidResponse[0]).to.have.property(
+          "cpm",
+          mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].price
+        );
+        expect(bidResponse[0]).to.have.property(
+          "width",
+          mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].w
+        );
+        expect(bidResponse[0]).to.have.property(
+          "height",
+          mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].h
+        );
+        expect(bidResponse[0]).to.have.property(
+          "ad",
+          mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].adm
+        );
+        expect(bidResponse[0]).to.have.property(
+          "creativeId",
+          mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].crid
+        );
+        expect(bidResponse[0]).to.have.property("ttl", 30);
+        expect(bidResponse[0]).to.have.property("netRevenue", true);
       });
     });
   });
