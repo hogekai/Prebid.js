@@ -1,14 +1,13 @@
-import { has } from "lodash";
 import { registerBidder } from "../src/adapters/bidderFactory";
 import { deepAccess, isNumber } from "../src/utils";
-import { BANNER } from "../src/mediaTypes";
+import { BANNER, VIDEO } from "../src/mediaTypes";
 import { ortbConverter } from "../libraries/ortbConverter/converter";
 
 export const BIDDER_CODE = "michao";
 export const ENDPOINT = "https://michao-ssp.com/bid/";
 export const REQUEST_METHOD = "POST";
 const DEFAULT_BID_TTL = 30;
-const DEFAULT_CURRENCY = 'USD';
+const DEFAULT_CURRENCY = "USD";
 const DEFAULT_NET_REVENUE = true;
 
 const openRTBConverter = ortbConverter({
@@ -21,6 +20,7 @@ const openRTBConverter = ortbConverter({
 
 export const spec = {
   code: BIDDER_CODE,
+  supportedMediaTypes: [BANNER, VIDEO],
 
   /**
    * Validates the parameters of the bid request
@@ -42,8 +42,16 @@ export const spec = {
       (bid) => hasBannerMediaType(bid) && !hasVideoMediaType(bid)
     );
 
+    const videoBids = validBidRequests.filter(
+      (bid) => hasVideoMediaType(bid) && !hasBannerMediaType(bid)
+    );
+
     bannerBids.forEach((bannerBid) => {
       serverRequests.push(buildBannerRequest(bannerBid, bidderRequest));
+    });
+
+    videoBids.forEach((videoBid) => {
+      serverRequests.push(buildVideoRequest(videoBid, bidderRequest));
     });
 
     return serverRequests;
@@ -54,7 +62,7 @@ export const spec = {
       response: response.body,
       request: request.data,
     }).bids;
-    
+
     return bids;
   },
 };
@@ -89,6 +97,10 @@ function buildBannerRequest(bannerBid, bidderRequest) {
   return buildRequest(bannerBid, bidderRequest, BANNER);
 }
 
+function buildVideoRequest(videoBid, bidderRequest) {
+  return buildRequest(videoBid, bidderRequest, VIDEO);
+}
+
 function buildRequest(bid, bidderRequest, mediaType) {
   const data = openRTBConverter.toORTB({
     bidRequests: [bid],
@@ -100,8 +112,8 @@ function buildRequest(bid, bidderRequest, mediaType) {
     method: REQUEST_METHOD,
     url: ENDPOINT,
     data,
-    options: { contentType: 'application/json', withCredentials: true }
-  }
+    options: { contentType: "application/json", withCredentials: true },
+  };
 }
 
 registerBidder(spec);

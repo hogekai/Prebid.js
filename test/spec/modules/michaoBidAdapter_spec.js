@@ -232,8 +232,6 @@ describe("Michao bid adapter", () => {
           serverRequests[0]
         );
 
-        console.log(bidResponse[0].requestId);
-
         expect(bidResponse).to.be.an("array").that.is.not.empty;
 
         expect(bidResponse[0]).to.have.property("currency", "USD");
@@ -260,6 +258,168 @@ describe("Michao bid adapter", () => {
         expect(bidResponse[0]).to.have.property(
           "creativeId",
           mockBannerBidResponseForBannerBid1.seatbid[0].bid[0].crid
+        );
+        expect(bidResponse[0]).to.have.property("ttl", 30);
+        expect(bidResponse[0]).to.have.property("netRevenue", true);
+      });
+    });
+  });
+
+  describe("video request", () => {
+    let mockVideoBid1;
+    let mockVideoBid2;
+    let mockVideoValidBidRequests;
+    let mockVideoBidderRequest;
+    let mockVideoResponse;
+    let mockVideoBidResponseForVideoBid1;
+
+    beforeEach(() => {
+      mockVideoBid1 = {
+        adUnitCode: "adUnitCode1",
+        bidId: "bidId1",
+        auctionId: MOCK_AUCTION_ID,
+        ortb2Imp: {
+          ext: {
+            tid: "cccc1234",
+          },
+        },
+        mediaTypes: {
+          video: { context: "outstream", playerSize: [[300, 250]] },
+        },
+        bidder: "pangle",
+        params: {
+          siteId: 123,
+          placementId: 456,
+        },
+      };
+
+      mockVideoBid2 = {
+        adUnitCode: "adUnitCode2",
+        bidId: "bidId2",
+        auctionId: MOCK_AUCTION_ID,
+        ortb2Imp: {
+          ext: {
+            tid: "cccc1234",
+          },
+        },
+        mediaTypes: {
+          video: { context: "outstream", playerSize: [[300, 250]] },
+        },
+        bidder: "pangle",
+        params: {
+          siteId: 123,
+          placementId: 456,
+        },
+      };
+
+      mockVideoValidBidRequests = [mockVideoBid1, mockVideoBid2];
+
+      mockVideoBidderRequest = {
+        auctionId: MOCK_AUCTION_ID,
+        auctionStart: 1579746300522,
+        bidderCode: BIDDER_CODE,
+        bidderRequestId: "15246a574e859f",
+        bids: [mockVideoBid1, mockVideoBid2],
+        ortb2: {},
+        refererInfo: REFERER_INFO,
+      };
+
+      mockVideoBidResponseForVideoBid1 = {
+        id: "requestId",
+        seatbid: [
+          {
+            bid: [
+              {
+                id: mockVideoBid1.bidId,
+                impid: mockVideoBid1.bidId,
+                price: 0.03294,
+                nurl: "https://api.example.com/nurl",
+                lurl: "https://api.example.com/lurl",
+                adm: '<VAST version="2.0"></VAST>',
+                adid: "1780626232977441",
+                adomain: ["swi.esxcmnb.com"],
+                iurl: "https://p16-ttam-va.ibyteimg.com/origin/ad-site-i18n-sg/202310245d0d598b3ff5993c4f129a8b",
+                cid: "1780626232977441",
+                crid: "1780626232977441",
+                attr: [4],
+                w: 640,
+                h: 640,
+                mtype: 1,
+              },
+            ],
+            seat: BIDDER_CODE,
+          },
+        ],
+      };
+
+      mockVideoResponse = {
+        headers: null,
+        body: mockVideoBidResponseForVideoBid1,
+      };
+    });
+
+    describe("`buildRequests`", () => {
+      it("should return a server request object containing the video's bidRequest", () => {
+        const serverRequests = spec.buildRequests(
+          mockVideoValidBidRequests,
+          mockVideoBidderRequest
+        );
+
+        expect(serverRequests).to.have.lengthOf(2);
+        expect(serverRequests[0].method).to.equal(REQUEST_METHOD);
+        expect(serverRequests[0].url).to.equal(ENDPOINT);
+        expect(serverRequests[0].data.imp[0]).to.have.property(
+          "id",
+          mockVideoBid1.bidId
+        );
+        expect(serverRequests[0].data.imp[0]).to.have.property("video");
+
+        expect(serverRequests[1].method).to.equal(REQUEST_METHOD);
+        expect(serverRequests[1].url).to.equal(ENDPOINT);
+        expect(serverRequests[1].data.imp[0]).to.have.property(
+          "id",
+          mockVideoBid2.bidId
+        );
+        expect(serverRequests[0].data.imp[0]).to.have.property("video");
+      });
+    });
+
+    describe("`interpretResponse`", () => {
+      it("should be interpreted from OpenRTB bid response to Prebid.js bid response", () => {
+        const serverRequests = spec.buildRequests(
+          mockVideoValidBidRequests,
+          mockVideoBidderRequest
+        );
+        const bidResponse = spec.interpretResponse(
+          mockVideoResponse,
+          serverRequests[0]
+        );
+        expect(bidResponse).to.be.an("array").that.is.not.empty;
+
+        expect(bidResponse[0]).to.have.property("currency", "USD");
+        expect(bidResponse[0]).to.have.property(
+          "requestId",
+          mockVideoBidResponseForVideoBid1.seatbid[0].bid[0].id
+        );
+        expect(bidResponse[0]).to.have.property(
+          "cpm",
+          mockVideoBidResponseForVideoBid1.seatbid[0].bid[0].price
+        );
+        expect(bidResponse[0]).to.have.property(
+          "width",
+          mockVideoBidResponseForVideoBid1.seatbid[0].bid[0].w
+        );
+        expect(bidResponse[0]).to.have.property(
+          "height",
+          mockVideoBidResponseForVideoBid1.seatbid[0].bid[0].h
+        );
+        expect(bidResponse[0]).to.have.property(
+          "vastXml",
+          mockVideoBidResponseForVideoBid1.seatbid[0].bid[0].adm
+        );
+        expect(bidResponse[0]).to.have.property(
+          "creativeId",
+          mockVideoBidResponseForVideoBid1.seatbid[0].bid[0].crid
         );
         expect(bidResponse[0]).to.have.property("ttl", 30);
         expect(bidResponse[0]).to.have.property("netRevenue", true);
