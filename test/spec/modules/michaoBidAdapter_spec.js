@@ -2,7 +2,7 @@ import { spec } from 'modules/michaoBidAdapter.js';
 import { expect } from 'chai';
 
 describe('Michao bid adapter', () => {
-  describe('isBidRequestValid', () => {
+  describe('`isBidRequestValid`', () => {
     it('should return false if `siteId` or `placementId` is not included', () => {
       const baseBid = {
         bidder: 'michao',
