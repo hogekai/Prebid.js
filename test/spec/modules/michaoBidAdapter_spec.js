@@ -123,7 +123,7 @@ describe("Michao bid adapter", () => {
             sizes: [[300, 250]],
           },
         },
-        bidder: "pangle",
+        bidder: BIDDER_CODE,
         params: {
           placementid: 999,
           appid: 111,
@@ -144,7 +144,7 @@ describe("Michao bid adapter", () => {
             sizes: [[300, 250]],
           },
         },
-        bidder: "pangle",
+        bidder: BIDDER_CODE,
         params: {
           placementid: 999,
           appid: 111,
@@ -286,7 +286,7 @@ describe("Michao bid adapter", () => {
         mediaTypes: {
           video: { context: "outstream", playerSize: [[300, 250]] },
         },
-        bidder: "pangle",
+        bidder: BIDDER_CODE,
         params: {
           siteId: 123,
           placementId: 456,
@@ -305,7 +305,7 @@ describe("Michao bid adapter", () => {
         mediaTypes: {
           video: { context: "outstream", playerSize: [[300, 250]] },
         },
-        bidder: "pangle",
+        bidder: BIDDER_CODE,
         params: {
           siteId: 123,
           placementId: 456,
@@ -423,6 +423,74 @@ describe("Michao bid adapter", () => {
         );
         expect(bidResponse[0]).to.have.property("ttl", 30);
         expect(bidResponse[0]).to.have.property("netRevenue", true);
+      });
+    });
+  });
+
+  describe("banner and video request", () => {
+    let mockMixedBid;
+    let mockMixedValidBidRequests;
+    let mockMixedBidderRequest;
+
+    beforeEach(() => {
+      mockMixedBid = {
+        adUnitCode: "adUnitCode1",
+        bidId: "bidId1",
+        auctionId: MOCK_AUCTION_ID,
+        ortb2Imp: {
+          ext: {
+            tid: "cccc1234",
+          },
+        },
+        mediaTypes: {
+          banner: {
+            sizes: [[300, 250]],
+          },
+          video: { context: "outstream", playerSize: [[300, 250]] },
+        },
+        bidder: BIDDER_CODE,
+        params: {
+          siteId: 123,
+          placementId: 456,
+        },
+      };
+
+      mockMixedValidBidRequests = [mockMixedBid];
+
+      mockMixedBidderRequest = {
+        auctionId: MOCK_AUCTION_ID,
+        auctionStart: 1579746300522,
+        bidderCode: BIDDER_CODE,
+        bidderRequestId: "15246a574e859f",
+        bids: [mockMixedBid],
+        ortb2: {},
+        refererInfo: REFERER_INFO,
+      };
+    });
+
+    describe("`buildRequests`", () => {
+      it("should return a server request object containing the banner and video bidRequests", () => {
+        const serverRequests = spec.buildRequests(
+          mockMixedValidBidRequests,
+          mockMixedBidderRequest
+        );
+
+        expect(serverRequests).to.have.lengthOf(2);
+        expect(serverRequests[0].method).to.equal(REQUEST_METHOD);
+        expect(serverRequests[0].url).to.equal(ENDPOINT);
+        expect(serverRequests[0].data.imp[0]).to.have.property(
+          "id",
+          mockMixedBid.bidId
+        );
+        expect(serverRequests[0].data.imp[0]).to.have.property("banner");
+
+        expect(serverRequests[1].method).to.equal(REQUEST_METHOD);
+        expect(serverRequests[1].url).to.equal(ENDPOINT);
+        expect(serverRequests[1].data.imp[0]).to.have.property(
+          "id",
+          mockMixedBid.bidId
+        );
+        expect(serverRequests[1].data.imp[0]).to.have.property("video");
       });
     });
   });

@@ -1,7 +1,8 @@
 import { registerBidder } from "../src/adapters/bidderFactory";
-import { deepAccess, isNumber } from "../src/utils";
+import { deepAccess, deepClone, isNumber } from "../src/utils";
 import { BANNER, VIDEO } from "../src/mediaTypes";
 import { ortbConverter } from "../libraries/ortbConverter/converter";
+import { valid } from "node-html-parser";
 
 export const BIDDER_CODE = "michao";
 export const ENDPOINT = "https://michao-ssp.com/bid/";
@@ -41,9 +42,11 @@ export const spec = {
     const bannerBids = validBidRequests.filter(
       (bid) => hasBannerMediaType(bid) && !hasVideoMediaType(bid)
     );
-
     const videoBids = validBidRequests.filter(
       (bid) => hasVideoMediaType(bid) && !hasBannerMediaType(bid)
+    );
+    const bannerAndVideoBids = validBidRequests.filter(
+      (bid) => hasVideoMediaType(bid) && hasBannerMediaType(bid)
     );
 
     bannerBids.forEach((bannerBid) => {
@@ -51,6 +54,16 @@ export const spec = {
     });
 
     videoBids.forEach((videoBid) => {
+      serverRequests.push(buildVideoRequest(videoBid, bidderRequest));
+    });
+
+    bannerAndVideoBids.forEach((bid) => {
+      const bannerBid = extractBannerBidFromMultiFormatBid(bid);
+      console.log(bannerBid);
+      serverRequests.push(buildBannerRequest(bannerBid, bidderRequest));
+
+      const videoBid = extractVideoBidFromMultiFormatBid(bid);
+      console.log(videoBid);
       serverRequests.push(buildVideoRequest(videoBid, bidderRequest));
     });
 
@@ -114,6 +127,27 @@ function buildRequest(bid, bidderRequest, mediaType) {
     data,
     options: { contentType: "application/json", withCredentials: true },
   };
+}
+
+function extractBannerBidFromMultiFormatBid(bid) {
+  return extractBidByMediaType(bid, "banner");
+}
+
+function extractVideoBidFromMultiFormatBid(bid) {
+  return extractBidByMediaType(bid, "video");
+}
+
+function extractBidByMediaType(bid, mediaTypeToKeep) {
+  const extractedBid = deepClone(bid);
+  const mediaTypes = Object.keys(bid.mediaTypes);
+
+  mediaTypes.forEach((mediaType) => {
+    if (mediaType !== mediaTypeToKeep) {
+      delete extractedBid.mediaTypes[mediaType];
+    }
+  });
+
+  return extractedBid;
 }
 
 registerBidder(spec);
