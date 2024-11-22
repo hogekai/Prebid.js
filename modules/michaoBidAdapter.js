@@ -82,7 +82,10 @@ export const spec = {
     return bidRequests;
   },
 
-  interpretResponse: function (serverResponse, request) {},
+  interpretResponse: function (serverResponse, request) {
+    return interpretResponse(serverResponse, request);
+  },
+
   getUserSyncs: function (
     syncOptions,
     serverResponses,
@@ -112,6 +115,15 @@ export function buildRequest(bidRequest, bidderRequest, mediaType) {
     data: openRTBBidRequest,
     options: { contentType: "application/json", withCredentials: true },
   };
+}
+
+export function interpretResponse(response, request) {
+  const bids = converter.fromORTB({
+    response: response.body,
+    request: request.data,
+  }).bids;
+
+  return bids;
 }
 
 export function hasParamsObject(bid) {

@@ -2,6 +2,7 @@ import { expect } from "chai";
 import {
   buildRequest,
   domainLogger,
+  interpretResponse,
   spec,
   validateMichaoParams,
 } from "../../../modules/michaoBidAdapter";
@@ -156,6 +157,107 @@ describe("the michao bidder adapter", () => {
         });
       });
     });
+
+    describe("interpret response", () => {
+      it("Server response is interpreted as a bid.", () => {
+        const response = {
+          headers: null,
+          body: {
+            id: "requestId",
+            seatbid: [
+              {
+                bid: [
+                  {
+                    id: "bidId1",
+                    impid: "bidId1",
+                    price: 0.18,
+                    adm: "<script>adm</script>",
+                    adid: "144762342",
+                    adomain: ["https://dummydomain.com"],
+                    iurl: "iurl",
+                    cid: "109",
+                    crid: "creativeId",
+                    cat: [],
+                    w: 300,
+                    h: 250,
+                    mtype: 1,
+                  },
+                ],
+                seat: "seat",
+              },
+            ],
+            cur: "USD",
+          },
+        };
+        const bannerBidRequest = {
+          adUnitCode: "test-div",
+          auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+          bidId: "bidId1",
+          bidder: "michao",
+          bidderRequestId: "15246a574e859f",
+          bidRequestsCount: 1,
+          bidderRequestsCount: 1,
+          bidderWinsCount: 0,
+          mediaTypes: { banner: [[300, 250]] },
+          params: {
+            site: 123,
+            placement: 456,
+          },
+        };
+        const bidderRequest = {
+          auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+          auctionStart: 1579746300522,
+          bidderCode: "michao",
+          bidderRequestId: "15246a574e859f",
+          bids: [bannerBidRequest],
+        };
+        const request = buildRequest(bannerBidRequest, bidderRequest, "banner");
+
+        const result = interpretResponse(response, request);
+
+        expect(result).to.be.an("array");
+        expect(result[0]).to.have.property("currency", "USD");
+        expect(result[0]).to.have.property("requestId", "bidId1");
+        expect(result[0]).to.have.property("cpm", 0.18);
+        expect(result[0]).to.have.property("width", 300);
+        expect(result[0]).to.have.property("height", 250);
+        expect(result[0]).to.have.property("ad", "<script>adm</script>");
+        expect(result[0]).to.have.property("creativeId", "creativeId");
+        expect(result[0]).to.have.property("netRevenue", true);
+      });
+
+      it("Empty server responses are interpreted as empty bids", () => {
+        const response = { body: {} };
+        const bannerBidRequest = {
+          adUnitCode: "test-div",
+          auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+          bidId: "22c4871113f461",
+          bidder: "michao",
+          bidderRequestId: "15246a574e859f",
+          bidRequestsCount: 1,
+          bidderRequestsCount: 1,
+          bidderWinsCount: 0,
+          mediaTypes: { banner: [[300, 250]] },
+          params: {
+            site: 123,
+            placement: 456,
+          },
+        };
+        const bidderRequest = {
+          auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+          auctionStart: 1579746300522,
+          bidderCode: "michao",
+          bidderRequestId: "15246a574e859f",
+          bids: [bannerBidRequest],
+        };
+        const request = buildRequest(bannerBidRequest, bidderRequest, "banner");
+
+        const result = interpretResponse(response, request);
+
+        expect(result).to.be.an("array");
+        expect(result.length).to.equal(0);
+      });
+    });
   });
 
   describe("integration", () => {
@@ -221,6 +323,80 @@ describe("the michao bidder adapter", () => {
       const result = spec.buildRequests(validBidRequests, bidderRequest);
 
       expect(result.length).to.equal(2);
+    });
+
+    it("`interpretResponse`", () => {
+      const response = {
+        headers: null,
+        body: {
+          id: "requestId",
+          seatbid: [
+            {
+              bid: [
+                {
+                  id: "bidId1",
+                  impid: "bidId1",
+                  price: 0.18,
+                  adm: '<VAST version="2.0"></VAST>',
+                  adid: "144762342",
+                  adomain: ["https://dummydomain.com"],
+                  iurl: "iurl",
+                  cid: "109",
+                  crid: "creativeId",
+                  cat: [],
+                  w: 640,
+                  h: 480,
+                  mtype: 1,
+                },
+              ],
+              seat: "seat",
+            },
+          ],
+          cur: "USD",
+        },
+      };
+      const bannerBidRequest = {
+        adUnitCode: "test-div",
+        auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+        bidId: "bidId1",
+        bidder: "michao",
+        bidderRequestId: "15246a574e859f",
+        bidRequestsCount: 1,
+        bidderRequestsCount: 1,
+        bidderWinsCount: 0,
+        mediaTypes: {
+          video: {
+            context: "outstream",
+            mimes: ["video/mp4"],
+            minduration: 0,
+            maxduration: 120,
+          },
+        },
+        params: {
+          site: 123,
+          placement: 456,
+        },
+      };
+      const bidderRequest = {
+        auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+        auctionStart: 1579746300522,
+        bidderCode: "michao",
+        bidderRequestId: "15246a574e859f",
+        bids: [bannerBidRequest],
+      };
+      const request = buildRequest(bannerBidRequest, bidderRequest, "banner");
+
+      const result = interpretResponse(response, request);
+
+      expect(result).to.be.an("array");
+      expect(result[0]).to.have.property("currency", "USD");
+      expect(result[0]).to.have.property("requestId", "bidId1");
+      expect(result[0]).to.have.property("cpm", 0.18);
+      expect(result[0]).to.have.property("width", 640);
+      expect(result[0]).to.have.property("height", 480);
+      expect(result[0]).to.have.property("ad", '<VAST version="2.0"></VAST>');
+      expect(result[0]).to.have.property("creativeId", "creativeId");
+      expect(result[0]).to.have.property("netRevenue", true);
     });
   });
 });
