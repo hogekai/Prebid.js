@@ -4,6 +4,7 @@ import {
   domainLogger,
   interpretResponse,
   spec,
+  syncUser,
   validateMichaoParams,
 } from "../../../modules/michaoBidAdapter";
 import { config } from "../../../src/config";
@@ -258,6 +259,22 @@ describe("the michao bidder adapter", () => {
         expect(result.length).to.equal(0);
       });
     });
+
+    describe("user syncs", () => {
+      it("Sync Users", () => {
+        const gdprConsent = {
+          gdprApplies: false,
+          consentString: "",
+        };
+
+        const result = syncUser(gdprConsent);
+
+        expect(result).to.deep.equal({
+          type: "iframe",
+          url: "https://sync.michao-ssp.com/cookie-syncs?gdpr=0&gdpr_consent=",
+        });
+      });
+    });
   });
 
   describe("integration", () => {
@@ -397,6 +414,26 @@ describe("the michao bidder adapter", () => {
       expect(result[0]).to.have.property("ad", '<VAST version="2.0"></VAST>');
       expect(result[0]).to.have.property("creativeId", "creativeId");
       expect(result[0]).to.have.property("netRevenue", true);
+    });
+
+    it("`getUserSyncs`", () => {
+      const syncOptions = {
+        iframeEnabled: true,
+      };
+      const gdprConsent = {
+        gdprApplies: true,
+        consentString:
+          "CQIhBPbQIhBPbEkAAAENCZCAAAAAAAAAAAAAAAAAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A",
+      };
+
+      const result = spec.getUserSyncs(syncOptions, {}, gdprConsent);
+
+      expect(result).to.deep.equal([
+        {
+          type: "iframe",
+          url: "https://sync.michao-ssp.com/cookie-syncs?gdpr=1&gdpr_consent=CQIhBPbQIhBPbEkAAAENCZCAAAAAAAAAAAAAAAAAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A",
+        },
+      ]);
     });
   });
 });

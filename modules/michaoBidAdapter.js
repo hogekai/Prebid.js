@@ -2,7 +2,8 @@ import { ortbConverter } from "../libraries/ortbConverter/converter.js";
 import { registerBidder } from "../src/adapters/bidderFactory.js";
 import { config } from "../src/config.js";
 import { BANNER, VIDEO } from "../src/mediaTypes.js";
-import { deepSetValue, logError } from "../src/utils";
+import { deepSetValue, formatQS, logError } from "../src/utils";
+import { getUserSyncParams } from "../libraries/userSyncUtils/userSyncUtils.js";
 
 const ENV = {
   BIDDER_CODE: "michao",
@@ -91,7 +92,11 @@ export const spec = {
     serverResponses,
     gdprConsent,
     uspConsent
-  ) {},
+  ) {
+    if (syncOptions.iframeEnabled) {
+      return [syncUser(gdprConsent)];
+    }
+  },
 };
 
 export const domainLogger = {
@@ -124,6 +129,19 @@ export function interpretResponse(response, request) {
   }).bids;
 
   return bids;
+}
+
+export function syncUser(gdprConsent) {
+    let gdprParams;
+    if (typeof gdprConsent.gdprApplies === 'boolean') {
+        gdprParams = `gdpr=${Number(gdprConsent.gdprApplies)}&gdpr_consent=${gdprConsent.consentString}`;
+    } else {
+        gdprParams = `gdpr_consent=${gdprConsent.consentString}`;
+    }
+  return {
+    type: "iframe",
+    url: "https://sync.michao-ssp.com/cookie-syncs?" + gdprParams
+  };
 }
 
 export function hasParamsObject(bid) {
