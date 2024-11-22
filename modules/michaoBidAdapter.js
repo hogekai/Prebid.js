@@ -2,22 +2,21 @@ import { ortbConverter } from "../libraries/ortbConverter/converter.js";
 import { registerBidder } from "../src/adapters/bidderFactory.js";
 import { config } from "../src/config.js";
 import { BANNER, VIDEO } from "../src/mediaTypes.js";
-import { deepSetValue, formatQS, logError } from "../src/utils";
-import { getUserSyncParams } from "../libraries/userSyncUtils/userSyncUtils.js";
+import { deepSetValue, logError } from "../src/utils";
 
 const ENV = {
   BIDDER_CODE: "michao",
   SUPPORTED_MEDIA_TYPES: [BANNER, VIDEO],
-  ENDPOINT: "https://michao-ssp.com/openrtb/prebid",
+  ENDPOINT: "https://rtb.michao-ssp.com/openrtb/prebid",
   NET_REVENUE: true,
-  CURRENCY: ["USD"],
+  DEFAULT_CURRENCY: "USD",
 };
 
 const converter = ortbConverter({
   request(buildRequest, imps, bidderRequest, context) {
     const bidRequest = context.bidRequests[0];
     const openRTBBidRequest = buildRequest(imps, bidderRequest, context);
-    openRTBBidRequest.cur = ENV.CURRENCY;
+    openRTBBidRequest.cur = [ENV.DEFAULT_CURRENCY];
     openRTBBidRequest.test = config.getConfig("debug") ? 1 : 0;
     deepSetValue(
       openRTBBidRequest,
@@ -38,6 +37,7 @@ const converter = ortbConverter({
 
   context: {
     netRevenue: ENV.NET_REVENUE,
+    currency: ENV.DEFAULT_CURRENCY,
     ttl: 360,
   },
 });
@@ -132,15 +132,21 @@ export function interpretResponse(response, request) {
 }
 
 export function syncUser(gdprConsent) {
-    let gdprParams;
-    if (typeof gdprConsent.gdprApplies === 'boolean') {
-        gdprParams = `gdpr=${Number(gdprConsent.gdprApplies)}&gdpr_consent=${gdprConsent.consentString}`;
+  let gdprParams = '';
+
+  if (typeof gdprConsent === "object") {
+    if (typeof gdprConsent.gdprApplies === "boolean") {
+      gdprParams = `gdpr=${Number(gdprConsent.gdprApplies)}&gdpr_consent=${
+        gdprConsent.consentString
+      }`;
     } else {
-        gdprParams = `gdpr_consent=${gdprConsent.consentString}`;
+      gdprParams = `gdpr_consent=${gdprConsent.consentString}`;
     }
+  }
+
   return {
     type: "iframe",
-    url: "https://sync.michao-ssp.com/cookie-syncs?" + gdprParams
+    url: "https://sync.michao-ssp.com/cookie-syncs?" + gdprParams,
   };
 }
 
@@ -164,7 +170,7 @@ function hasVideoMediaType(bid) {
 }
 
 function hasMediaType(bid, mediaType) {
-  return !!bid.mediaType[mediaType];
+  return bid.mediaTypes.hasOwnProperty(mediaType);
 }
 
 registerBidder(spec);

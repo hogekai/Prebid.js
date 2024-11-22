@@ -69,7 +69,7 @@ describe("the michao bidder adapter", () => {
         const result = buildRequest(bannerBidRequest, bidderRequest, "banner");
 
         expect(result).to.nested.include({
-          url: "https://michao-ssp.com/openrtb/prebid",
+          url: "https://rtb.michao-ssp.com/openrtb/prebid",
           "options.contentType": "application/json",
           "options.withCredentials": true,
           method: "POST",
@@ -113,7 +113,7 @@ describe("the michao bidder adapter", () => {
         const result = buildRequest(videoBidRequest, bidderRequest, "banner");
 
         expect(result).to.nested.include({
-          url: "https://michao-ssp.com/openrtb/prebid",
+          url: "https://rtb.michao-ssp.com/openrtb/prebid",
           "options.contentType": "application/json",
           "options.withCredentials": true,
           method: "POST",
@@ -299,7 +299,7 @@ describe("the michao bidder adapter", () => {
           bidId: "bid-1",
           bidder: "michao",
           bidderRequestId: "bidder-request-1",
-          mediaType: {
+          mediaTypes: {
             banner: {
               sizes: [[300, 250]],
             },
@@ -315,7 +315,7 @@ describe("the michao bidder adapter", () => {
           bidId: "bid-2",
           bidder: "michao",
           bidderRequestId: "bidder-request-1",
-          mediaType: {
+          mediaTypes: {
             video: {
               context: "outstream",
               playerSize: [640, 480],
