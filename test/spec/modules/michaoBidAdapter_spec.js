@@ -1,0 +1,3 @@
+describe('Michao Bidder Adapter', () => {
+
+});
