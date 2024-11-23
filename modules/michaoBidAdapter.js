@@ -23,6 +23,9 @@ const converter = ortbConverter({
       "site.id",
       bidRequest.params.site.toString()
     );
+    if (bidRequest?.schain) {
+      deepSetValue(openRTBBidRequest, 'source.schain', bidRequest.schain);
+    }
 
     return openRTBBidRequest;
   },
