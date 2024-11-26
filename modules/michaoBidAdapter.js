@@ -1,24 +1,24 @@
-import { ortbConverter } from "../libraries/ortbConverter/converter.js";
-import { registerBidder } from "../src/adapters/bidderFactory.js";
-import { config } from "../src/config.js";
-import { BANNER, VIDEO } from "../src/mediaTypes.js";
-import { Renderer } from "../src/Renderer.js";
+import { ortbConverter } from '../libraries/ortbConverter/converter.js';
+import { registerBidder } from '../src/adapters/bidderFactory.js';
+import { config } from '../src/config.js';
+import { BANNER, VIDEO } from '../src/mediaTypes.js';
+import { Renderer } from '../src/Renderer.js';
 import {
   deepSetValue,
   isStr,
   logError,
   replaceAuctionPrice,
   triggerPixel,
-} from "../src/utils";
+} from '../src/utils.js';
 
 const ENV = {
-  BIDDER_CODE: "michao",
+  BIDDER_CODE: 'michao',
   SUPPORTED_MEDIA_TYPES: [BANNER, VIDEO],
-  ENDPOINT: "https://rtb.michao-ssp.com/openrtb/prebid",
+  ENDPOINT: 'https://rtb.michao-ssp.com/openrtb/prebid',
   NET_REVENUE: true,
-  DEFAULT_CURRENCY: "USD",
+  DEFAULT_CURRENCY: 'USD',
   RENDERER_URL:
-    "https://cdn.jsdelivr.net/npm/in-renderer-js@latest/dist/in-renderer.umd.min.js",
+    'https://cdn.jsdelivr.net/npm/in-renderer-js@latest/dist/in-renderer.umd.min.js',
 };
 
 export const spec = {
@@ -47,14 +47,14 @@ export const spec = {
         hasBannerMediaType(validBidRequest)
       ) {
         bidRequests.push(
-          buildRequest(validBidRequest, bidderRequest, "banner")
+          buildRequest(validBidRequest, bidderRequest, 'banner')
         );
-        bidRequests.push(buildRequest(validBidRequest, bidderRequest, "video"));
+        bidRequests.push(buildRequest(validBidRequest, bidderRequest, 'video'));
       } else if (hasVideoMediaType(validBidRequest)) {
-        bidRequests.push(buildRequest(validBidRequest, bidderRequest, "video"));
+        bidRequests.push(buildRequest(validBidRequest, bidderRequest, 'video'));
       } else if (hasBannerMediaType(validBidRequest)) {
         bidRequests.push(
-          buildRequest(validBidRequest, bidderRequest, "banner")
+          buildRequest(validBidRequest, bidderRequest, 'banner')
         );
       }
     });
@@ -86,7 +86,7 @@ export const spec = {
 
 export const domainLogger = {
   bidRequestValidationError() {
-    logError("Michao: wrong format of site or placement.");
+    logError('Michao: wrong format of site or placement.');
   },
 };
 
@@ -100,10 +100,10 @@ export function buildRequest(bidRequest, bidderRequest, mediaType) {
   });
 
   return {
-    method: "POST",
+    method: 'POST',
     url: ENV.ENDPOINT,
     data: openRTBBidRequest,
-    options: { contentType: "application/json", withCredentials: true },
+    options: { contentType: 'application/json', withCredentials: true },
   };
 }
 
@@ -117,10 +117,10 @@ export function interpretResponse(response, request) {
 }
 
 export function syncUser(gdprConsent) {
-  let gdprParams = "";
+  let gdprParams = '';
 
-  if (typeof gdprConsent === "object") {
-    if (typeof gdprConsent.gdprApplies === "boolean") {
+  if (typeof gdprConsent === 'object') {
+    if (typeof gdprConsent.gdprApplies === 'boolean') {
       gdprParams = `gdpr=${Number(gdprConsent.gdprApplies)}&gdpr_consent=${
         gdprConsent.consentString
       }`;
@@ -130,8 +130,8 @@ export function syncUser(gdprConsent) {
   }
 
   return {
-    type: "iframe",
-    url: "https://sync.michao-ssp.com/cookie-syncs?" + gdprParams,
+    type: 'iframe',
+    url: 'https://sync.michao-ssp.com/cookie-syncs?' + gdprParams,
   };
 }
 
@@ -143,11 +143,11 @@ export function addRenderer(bid) {
 }
 
 export function hasParamsObject(bid) {
-  return typeof bid.params === "object";
+  return typeof bid.params === 'object';
 }
 
 export function validateMichaoParams(params) {
-  const michaoParams = ["site", "placement"];
+  const michaoParams = ['site', 'placement'];
   return michaoParams.every((michaoParam) =>
     Number.isFinite(params[michaoParam])
   );
@@ -163,14 +163,14 @@ const converter = ortbConverter({
     const bidRequest = context.bidRequests[0];
     const openRTBBidRequest = buildRequest(imps, bidderRequest, context);
     openRTBBidRequest.cur = [ENV.DEFAULT_CURRENCY];
-    openRTBBidRequest.test = config.getConfig("debug") ? 1 : 0;
+    openRTBBidRequest.test = config.getConfig('debug') ? 1 : 0;
     deepSetValue(
       openRTBBidRequest,
-      "site.id",
+      'site.id',
       bidRequest.params.site.toString()
     );
     if (bidRequest?.schain) {
-      deepSetValue(openRTBBidRequest, "source.schain", bidRequest.schain);
+      deepSetValue(openRTBBidRequest, 'source.schain', bidRequest.schain);
     }
 
     return openRTBBidRequest;
@@ -179,7 +179,7 @@ const converter = ortbConverter({
   imp(buildImp, bidRequest, context) {
     const imp = buildImp(bidRequest, context);
     // imp.id = bidRequest.adUnitCode;
-    deepSetValue(imp, "ext.placement", bidRequest.params.placement.toString());
+    deepSetValue(imp, 'ext.placement', bidRequest.params.placement.toString());
 
     return imp;
   },
@@ -187,7 +187,7 @@ const converter = ortbConverter({
   bidResponse(buildBidResponse, bid, context) {
     const { bidRequest } = context;
     let bidResponse = buildBidResponse(bid, context);
-    if (bidRequest.mediaTypes.video?.context === "outstream") {
+    if (bidRequest.mediaTypes.video?.context === 'outstream') {
       const renderer = Renderer.install({
         id: bid.bidId,
         url: ENV.RENDERER_URL,
@@ -208,11 +208,11 @@ const converter = ortbConverter({
 });
 
 function hasBannerMediaType(bid) {
-  return hasMediaType(bid, "banner");
+  return hasMediaType(bid, 'banner');
 }
 
 function hasVideoMediaType(bid) {
-  return hasMediaType(bid, "video");
+  return hasMediaType(bid, 'video');
 }
 
 function hasMediaType(bid, mediaType) {
