@@ -21,55 +21,6 @@ const ENV = {
     "https://cdn.jsdelivr.net/npm/in-renderer-js@latest/dist/in-renderer.umd.min.js",
 };
 
-const converter = ortbConverter({
-  request(buildRequest, imps, bidderRequest, context) {
-    const bidRequest = context.bidRequests[0];
-    const openRTBBidRequest = buildRequest(imps, bidderRequest, context);
-    openRTBBidRequest.cur = [ENV.DEFAULT_CURRENCY];
-    openRTBBidRequest.test = config.getConfig("debug") ? 1 : 0;
-    deepSetValue(
-      openRTBBidRequest,
-      "site.id",
-      bidRequest.params.site.toString()
-    );
-    if (bidRequest?.schain) {
-      deepSetValue(openRTBBidRequest, "source.schain", bidRequest.schain);
-    }
-
-    return openRTBBidRequest;
-  },
-
-  imp(buildImp, bidRequest, context) {
-    const imp = buildImp(bidRequest, context);
-    // imp.id = bidRequest.adUnitCode;
-    deepSetValue(imp, "ext.placement", bidRequest.params.placement.toString());
-
-    return imp;
-  },
-
-  bidResponse(buildBidResponse, bid, context) {
-    const { bidRequest } = context;
-    let bidResponse = buildBidResponse(bid, context);
-    if (bidRequest.mediaTypes.video?.context === "outstream") {
-      const renderer = Renderer.install({
-        id: bid.bidId,
-        url: ENV.RENDERER_URL,
-        adUnitCode: bid.adUnitCode,
-      });
-      renderer.setRender(renderOutStream);
-      bidResponse.renderer = renderer;
-    }
-
-    return bidResponse;
-  },
-
-  context: {
-    netRevenue: ENV.NET_REVENUE,
-    currency: ENV.DEFAULT_CURRENCY,
-    ttl: 360,
-  },
-});
-
 export const spec = {
   code: ENV.BIDDER_CODE,
   supportedMediaTypes: ENV.SUPPORTED_MEDIA_TYPES,
@@ -184,7 +135,7 @@ export function syncUser(gdprConsent) {
   };
 }
 
-export function renderOutStream(bid) {
+export function addRenderer(bid) {
   bid.renderer.push(() => {
     const inRenderer = new window.InRenderer();
     inRenderer.render(bid.adUnitCode, bid);
@@ -202,6 +153,60 @@ export function validateMichaoParams(params) {
   );
 }
 
+export function billBid(bid) {
+  bid.burl = replaceAuctionPrice(bid.burl, bid.originalCpm || bid.cpm);
+  triggerPixel(bid.burl);
+}
+
+const converter = ortbConverter({
+  request(buildRequest, imps, bidderRequest, context) {
+    const bidRequest = context.bidRequests[0];
+    const openRTBBidRequest = buildRequest(imps, bidderRequest, context);
+    openRTBBidRequest.cur = [ENV.DEFAULT_CURRENCY];
+    openRTBBidRequest.test = config.getConfig("debug") ? 1 : 0;
+    deepSetValue(
+      openRTBBidRequest,
+      "site.id",
+      bidRequest.params.site.toString()
+    );
+    if (bidRequest?.schain) {
+      deepSetValue(openRTBBidRequest, "source.schain", bidRequest.schain);
+    }
+
+    return openRTBBidRequest;
+  },
+
+  imp(buildImp, bidRequest, context) {
+    const imp = buildImp(bidRequest, context);
+    // imp.id = bidRequest.adUnitCode;
+    deepSetValue(imp, "ext.placement", bidRequest.params.placement.toString());
+
+    return imp;
+  },
+
+  bidResponse(buildBidResponse, bid, context) {
+    const { bidRequest } = context;
+    let bidResponse = buildBidResponse(bid, context);
+    if (bidRequest.mediaTypes.video?.context === "outstream") {
+      const renderer = Renderer.install({
+        id: bid.bidId,
+        url: ENV.RENDERER_URL,
+        adUnitCode: bid.adUnitCode,
+      });
+      renderer.setRender(addRenderer);
+      bidResponse.renderer = renderer;
+    }
+
+    return bidResponse;
+  },
+
+  context: {
+    netRevenue: ENV.NET_REVENUE,
+    currency: ENV.DEFAULT_CURRENCY,
+    ttl: 360,
+  },
+});
+
 function hasBannerMediaType(bid) {
   return hasMediaType(bid, "banner");
 }
@@ -212,11 +217,6 @@ function hasVideoMediaType(bid) {
 
 function hasMediaType(bid, mediaType) {
   return bid.mediaTypes.hasOwnProperty(mediaType);
-}
-
-export function billBid(bid) {
-  bid.burl = replaceAuctionPrice(bid.burl, bid.originalCpm || bid.cpm);
-  triggerPixel(bid.burl);
 }
 
 registerBidder(spec);
