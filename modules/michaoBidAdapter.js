@@ -2,7 +2,14 @@ import { ortbConverter } from "../libraries/ortbConverter/converter.js";
 import { registerBidder } from "../src/adapters/bidderFactory.js";
 import { config } from "../src/config.js";
 import { BANNER, VIDEO } from "../src/mediaTypes.js";
-import { deepSetValue, isStr, logError, replaceAuctionPrice, triggerPixel } from "../src/utils";
+import { Renderer } from "../src/Renderer.js";
+import {
+  deepSetValue,
+  isStr,
+  logError,
+  replaceAuctionPrice,
+  triggerPixel,
+} from "../src/utils";
 
 const ENV = {
   BIDDER_CODE: "michao",
@@ -10,6 +17,8 @@ const ENV = {
   ENDPOINT: "https://rtb.michao-ssp.com/openrtb/prebid",
   NET_REVENUE: true,
   DEFAULT_CURRENCY: "USD",
+  RENDERER_URL:
+    "https://cdn.jsdelivr.net/npm/in-renderer-js@latest/dist/in-renderer.umd.min.js",
 };
 
 const converter = ortbConverter({
@@ -24,7 +33,7 @@ const converter = ortbConverter({
       bidRequest.params.site.toString()
     );
     if (bidRequest?.schain) {
-      deepSetValue(openRTBBidRequest, 'source.schain', bidRequest.schain);
+      deepSetValue(openRTBBidRequest, "source.schain", bidRequest.schain);
     }
 
     return openRTBBidRequest;
@@ -36,6 +45,22 @@ const converter = ortbConverter({
     deepSetValue(imp, "ext.placement", bidRequest.params.placement.toString());
 
     return imp;
+  },
+
+  bidResponse(buildBidResponse, bid, context) {
+    const { bidRequest } = context;
+    let bidResponse = buildBidResponse(bid, context);
+    if (bidRequest.mediaTypes.video?.context === "outstream") {
+      const renderer = Renderer.install({
+        id: bid.bidId,
+        url: ENV.RENDERER_URL,
+        adUnitCode: bid.adUnitCode,
+      });
+      renderer.setRender(renderOutStream);
+      bidResponse.renderer = renderer;
+    }
+
+    return bidResponse;
   },
 
   context: {
@@ -105,7 +130,7 @@ export const spec = {
     if (bid.burl && isStr(bid.burl)) {
       billBid(bid);
     }
-  }
+  },
 };
 
 export const domainLogger = {
@@ -141,7 +166,7 @@ export function interpretResponse(response, request) {
 }
 
 export function syncUser(gdprConsent) {
-  let gdprParams = '';
+  let gdprParams = "";
 
   if (typeof gdprConsent === "object") {
     if (typeof gdprConsent.gdprApplies === "boolean") {
@@ -157,6 +182,13 @@ export function syncUser(gdprConsent) {
     type: "iframe",
     url: "https://sync.michao-ssp.com/cookie-syncs?" + gdprParams,
   };
+}
+
+export function renderOutStream(bid) {
+  bid.renderer.push(() => {
+    const inRenderer = new window.InRenderer();
+    inRenderer.render(bid.adUnitCode, bid);
+  });
 }
 
 export function hasParamsObject(bid) {
