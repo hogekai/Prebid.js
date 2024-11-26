@@ -10,26 +10,49 @@ Maintainer: miyamoto.kai@lookverin.com
 
 Module that connects to Michao’s demand sources
 
-# Test Parameters
+Supported Ad format:
+* Banner
+* Video (instream and outstream)
 
-```javascript
+# Test Parameters
+```
 var adUnits = [
-  {
-    code: "test-div",
-    mediaTypes: {
-      banner: {
-        sizes: [[300, 250]], // a display size
-      },
-    },
-    bids: [
-      {
-        bidder: "michao",
-        params: {
-          placement: 1,
-          site: 1,
+    // Banner adUnit
+    {
+        code: 'banner-div',
+        mediaTypes: {
+            banner: {
+                sizes: [[300, 250]],
+            }
         },
-      },
-    ],
-  },
+        bids: [{
+            bidder: 'michao',
+            params: {
+                site: 1,
+                placement: 1,
+            }
+        }]
+    },
+    // Video adUnit
+    {
+        code: 'video-div',
+        mediaTypes: {
+            video: {
+                context: 'outstream',
+                playerSize: [640, 480],
+                minduration: 0,
+                maxduration: 120,
+                mimes: ['video/mp4'],
+                protocols: [7]
+            }
+        },
+        bids: [{
+            bidder: 'michao',
+            params: {
+                site: 1,
+                placement: 1,
+            }
+        }]
+    }
 ];
 ```
