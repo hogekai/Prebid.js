@@ -2,7 +2,7 @@ import { ortbConverter } from "../libraries/ortbConverter/converter.js";
 import { registerBidder } from "../src/adapters/bidderFactory.js";
 import { config } from "../src/config.js";
 import { BANNER, VIDEO } from "../src/mediaTypes.js";
-import { deepSetValue, logError } from "../src/utils";
+import { deepSetValue, isStr, logError, replaceAuctionPrice, triggerPixel } from "../src/utils";
 
 const ENV = {
   BIDDER_CODE: "michao",
@@ -100,6 +100,12 @@ export const spec = {
       return [syncUser(gdprConsent)];
     }
   },
+
+  onBidBillable: function (bid) {
+    if (bid.burl && isStr(bid.burl)) {
+      billBid(bid);
+    }
+  }
 };
 
 export const domainLogger = {
@@ -174,6 +180,11 @@ function hasVideoMediaType(bid) {
 
 function hasMediaType(bid, mediaType) {
   return bid.mediaTypes.hasOwnProperty(mediaType);
+}
+
+export function billBid(bid) {
+  bid.burl = replaceAuctionPrice(bid.burl, bid.originalCpm || bid.cpm);
+  triggerPixel(bid.burl);
 }
 
 registerBidder(spec);

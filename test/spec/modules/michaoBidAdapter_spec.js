@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import {
+  billBid,
   buildRequest,
   domainLogger,
   interpretResponse,
@@ -7,6 +8,7 @@ import {
   syncUser,
   validateMichaoParams,
 } from "../../../modules/michaoBidAdapter";
+import * as utils from "src/utils.js";
 import { config } from "../../../src/config";
 
 describe("the michao bidder adapter", () => {
@@ -275,6 +277,31 @@ describe("the michao bidder adapter", () => {
         });
       });
     });
+
+    describe("bill a bid", () => {
+      const triggerPixelSpy = sinon.spy(utils, "triggerPixel");
+      const bid = {
+        adUnitCode: "test-div",
+        auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+        bidId: "22c4871113f461",
+        bidder: "michao",
+        bidderRequestId: "15246a574e859f",
+        bidRequestsCount: 1,
+        bidderRequestsCount: 1,
+        bidderWinsCount: 0,
+        mediaTypes: { banner: [[300, 250]] },
+        params: {
+          site: 123,
+          placement: 456,
+        },
+        burl: "https://example.com/burl",
+      };
+
+      billBid(bid);
+
+      expect(triggerPixelSpy.calledWith("https://example.com/burl")).to.true;
+      triggerPixelSpy.restore();
+    });
   });
 
   describe("integration", () => {
@@ -434,6 +461,31 @@ describe("the michao bidder adapter", () => {
           url: "https://sync.michao-ssp.com/cookie-syncs?gdpr=1&gdpr_consent=CQIhBPbQIhBPbEkAAAENCZCAAAAAAAAAAAAAAAAAAAAA.II7Nd_X__bX9n-_7_6ft0eY1f9_r37uQzDhfNs-8F3L_W_LwX32E7NF36tq4KmR4ku1bBIQNtHMnUDUmxaolVrzHsak2cpyNKJ_JkknsZe2dYGF9Pn9lD-YKZ7_5_9_f52T_9_9_-39z3_9f___dv_-__-vjf_599n_v9fV_78_Kf9______-____________8A",
         },
       ]);
+    });
+
+    it("`onBidBillable`", () => {
+      const triggerPixelSpy = sinon.spy(utils, "triggerPixel");
+      const bid = {
+        adUnitCode: "test-div",
+        auctionId: "b06c5141-fe8f-4cdf-9d7d-54415490a917",
+        bidId: "22c4871113f461",
+        bidder: "michao",
+        bidderRequestId: "15246a574e859f",
+        bidRequestsCount: 1,
+        bidderRequestsCount: 1,
+        bidderWinsCount: 0,
+        mediaTypes: { banner: [[300, 250]] },
+        params: {
+          site: 123,
+          placement: 456,
+        },
+        burl: "https://example.com/burl",
+      };
+
+      spec.onBidBillable(bid);
+
+      expect(triggerPixelSpy.calledWith("https://example.com/burl")).to.true;
+      triggerPixelSpy.restore();
     });
   });
 });
